@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from PIL import Image
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
@@ -8,10 +9,21 @@ from xgboost import XGBClassifier
 st.set_page_config(page_title="Pronostics Foot IA", page_icon="⚽", layout="centered")
 
 st.title("⚽ Mon IA de Pronostics Football")
-st.write("Entrez les statistiques récentes et les cotes du match pour obtenir le pronostic de l'IA.")
+st.write("Importez une capture d'écran du match ou entrez les statistiques pour obtenir le pronostic.")
 
-# --- FORMULAIRE UTILISATEUR ---
-st.header("📊 Paramètres du match")
+# --- SECTION IMPORTATION D'IMAGE ---
+st.header("📸 1. Importer l'image du match")
+uploaded_file = st.file_uploader("Glissez-déposez une capture d'écran (feuille de match, cotes...)", type=["png", "jpg", "jpeg"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Capture d'écran du match importée", use_container_width=True)
+    st.success("Image bien reçue par l'IA !")
+
+st.divider()
+
+# --- FORMULAIRE DES PARAMÈTRES ---
+st.header("📊 2. Paramètres du match")
 
 col1, col2 = st.columns(2)
 
