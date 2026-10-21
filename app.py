@@ -1,66 +1,22 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from PIL import Image
 from sklearn.ensemble import StackingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 
-st.set_page_config(page_title="Pronostics Foot IA", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Pronostics Foot IA - Automatique", page_icon="⚽", layout="wide")
 
-st.title("⚽ Mon IA de Pronostics Football")
-st.write("Importez ou collez une capture d'écran du match et ajustez les paramètres pour lancer le super-modèle.")
+st.title("⚽ Super-IA : Analyse Automatique des Matchs")
+st.write("Le Super-Modèle analyse les derniers matchs de la saison, calcule les statistiques des équipes et prédit les résultats de manière totalement autonome.")
 
-# --- SECTION IMAGE (IMPORT + ZONE DÉDIÉE) ---
-st.header("📸 1. Image du match")
-
-# Option classique par fichier / galerie
-uploaded_file = st.file_uploader("📂 Importer depuis votre appareil", type=["png", "jpg", "jpeg"])
-
-# Zone d'aide et de collage
-st.markdown("---")
-st.write("📋 **Zone de capture d'écran :**")
-st.text_area("Vous pouvez glisser-déposer ou coller (Ctrl+V) vos images directement selon votre navigateur.", placeholder="Espace d'accompagnement pour vos captures d'écran...", height=70)
-
-image = None
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Capture d'écran chargée avec succès !", use_container_width=True)
-    st.success("Image prête pour l'analyse !")
-else:
-    st.info("💡 Astuce : Utilisez le bouton ci-dessus pour chercher une capture dans votre galerie.")
-
-st.divider()
-
-# --- FORMULAIRE DES PARAMÈTRES ---
-st.header("📊 2. Paramètres du match")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Équipe à Domicile")
-    home_form = st.slider("Forme (Buts marqués à dom. / 5 derniers matchs)", 0.0, 4.0, 1.5, 0.1)
-    home_concede = st.slider("Défense (Buts encaissés à dom. / 5 derniers matchs)", 0.0, 4.0, 1.0, 0.1)
-    cote_h = st.number_input("Cote Bookmaker (Victoire Domicile)", min_value=1.01, value=2.10)
-
-with col2:
-    st.subheader("Équipe à l'Extérieur")
-    away_form = st.slider("Forme (Buts marqués à ext. / 5 derniers matchs)", 0.0, 4.0, 1.2, 0.1)
-    away_concede = st.slider("Défense (Buts encaissés à ext. / 5 derniers matchs)", 0.0, 4.0, 1.3, 0.1)
-    cote_a = st.number_input("Cote Bookmaker (Victoire Extérieur)", min_value=1.01, value=3.20)
-
-cote_d = st.number_input("Cote Bookmaker (Match Nul)", min_value=1.01, value=3.40)
-
-# Calcul des probabilités implicites des cotes
-prob_h = 1 / cote_h
-prob_d = 1 / cote_d
-prob_a = 1 / cote_a
-
-# --- CHARGEMENT DU SUPER-MODÈLE (STACKING) ---
+# --- CHARGEMENT ET ENTRAÎNEMENT DU SUPER-MODÈLE ---
 @st.cache_resource
-def entrainer_super_modele():
+def entrainer_et_predire():
     url = "https://www.football-data.co.uk/mmz4281/2425/F1.csv"
-    df = pd.read_csv(url).dropna(subset=['FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A'])
+    df = pd.read_csv(url).dropna(subset=['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A'])
+    
+    # Préparation des données d'entraînement
     df['Cible'] = df['FTR'].map({'H': 1, 'D': 0, 'A': 2})
     df['Home_Form_H'] = df.groupby('HomeTeam')['FTHG'].transform(lambda x: x.rolling(5, min_periods=1).mean())
     df['Home_Concede_H'] = df.groupby('HomeTeam')['FTAG'].transform(lambda x: x.rolling(5, min_periods=1).mean())
@@ -71,39 +27,47 @@ def entrainer_super_modele():
     df['Prob_A'] = 1 / df['B365A']
     
     feats = ['Home_Form_H', 'Home_Concede_H', 'Away_Form_A', 'Away_Concede_A', 'Prob_H', 'Prob_D', 'Prob_A']
-    df = df.dropna(subset=feats + ['Cible'])
+    df_clean = df.dropna(subset=feats + ['Cible']).copy()
     
-    X = df[feats]
-    y = df['Cible']
+    X = df_clean[feats]
+    y = df_clean['Cible']
     
+    # Entraînement du Stacking Classifier (Random Forest + XGBoost + Meta-LogisticRegression)
     estimators = [
         ('rf', RandomForestClassifier(n_estimators=50, random_state=42)),
         ('xgb', XGBClassifier(eval_metric='logloss', random_state=42))
     ]
-    
     modele = StackingClassifier(
         estimators=estimators,
         final_estimator=LogisticRegression(max_iter=500)
     )
-    
     modele.fit(X, y)
-    return modele
+    
+    # Prédiction automatique sur les derniers matchs de la base de données
+    derniers_matchs = df_clean.tail(15).copy() # Sélectionne les 15 derniers matchs
+    X_pred = derniers_matchs[feats]
+    
+    preds = modele.predict(X_pred)
+    probas = modele.predict_proba(X_pred)
+    
+    derniers_matchs['Pronostic_IA'] = preds
+    derniers_matchs['Pronostic_Texte'] = derniers_matchs['Pronostic_IA'].map({1: "Victoire Domicile (1)", 0: "Match Nul (N)", 2: "Victoire Extérieur (2)"})
+    derniers_matchs['Confiance_Max'] = [p.max() * 100 for p in probas]
+    
+    return derniers_matchs
 
-modele_final = entrainer_super_modele()
+with st.spinner("🤖 L'IA analyse les matchs et calcule les pronostics en cours..."):
+    resultats_df = entrainer_et_predire()
 
-# --- BOUTON DE PRÉDICTION ---
-if st.button("Lancer l'analyse du Super-Modèle 🤖", type="primary"):
-    nouveau_match = np.array([[home_form, home_concede, away_form, away_concede, prob_h, prob_d, prob_a]])
-    prediction = modele_final.predict(nouveau_match)[0]
-    probabilites = modele_final.predict_proba(nouveau_match)[0]
-    
-    traduction = {1: "Victoire de l'équipe à Domicile (1)", 0: "Match Nul (N)", 2: "Victoire de l'équipe à l'Extérieur (2)"}
-    
-    st.divider()
-    st.subheader("🎯 Résultat de la Prédiction")
-    st.success(f"**Pronostic principal :** {traduction[prediction]}")
-    
-    col_p1, col_p2, col_p3 = st.columns(3)
-    col_p1.metric("Probabilité Domicile", f"{probabilites[0]*100:.1f}%")
-    col_p2.metric("Probabilité Nul", f"{probabilites[1]*100:.1f}%")
-    col_p3.metric("Probabilité Extérieur", f"{probabilites[2]*100:.1f}%")
+st.success("✅ Analyse automatique terminée avec succès !")
+
+# --- AFFICHAGE DES RÉSULTATS SOUS FORME DE LISTE ---
+st.header("📊 Derniers Matchs Analysés par l'IA")
+
+for index, row in resultats_df.iterrows():
+    with st.container():
+        col1, col2, col3 = st.columns([2, 2, 2])
+        col1.markdown(f"**🏠 {row['HomeTeam']}** vs **✈️ {row['AwayTeam']}**")
+        col2.markdown(f"🎯 **Pronostic :** `{row['Pronostic_Texte']}`")
+        col3.markdown(f"📈 **Confiance :** `{row['Confiance_Max']:.1f}%`")
+        st.divider()
