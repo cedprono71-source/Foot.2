@@ -11,10 +11,16 @@ st.set_page_config(page_title="Pronostics Foot IA", page_icon="⚽", layout="cen
 st.title("⚽ Mon IA de Pronostics Football")
 st.write("Importez ou collez une capture d'écran du match et ajustez les paramètres pour lancer le super-modèle.")
 
-# --- SECTION IMAGE (IMPORT OU COLLAGE) ---
+# --- SECTION IMAGE (IMPORT + ZONE DÉDIÉE) ---
 st.header("📸 1. Image du match")
 
-uploaded_file = st.file_uploader("📂 Importer depuis votre appareil (ou coller une capture d'écran)", type=["png", "jpg", "jpeg"])
+# Option classique par fichier / galerie
+uploaded_file = st.file_uploader("📂 Importer depuis votre appareil", type=["png", "jpg", "jpeg"])
+
+# Zone d'aide et de collage
+st.markdown("---")
+st.write("📋 **Zone de capture d'écran :**")
+st.text_area("Vous pouvez glisser-déposer ou coller (Ctrl+V) vos images directement selon votre navigateur.", placeholder="Espace d'accompagnement pour vos captures d'écran...", height=70)
 
 image = None
 if uploaded_file is not None:
@@ -22,7 +28,7 @@ if uploaded_file is not None:
     st.image(image, caption="Capture d'écran chargée avec succès !", use_container_width=True)
     st.success("Image prête pour l'analyse !")
 else:
-    st.info("💡 Astuce : Vous pouvez aussi faire un **Copier / Coller (Ctrl+V)** directement sur cette page selon votre navigateur, ou utiliser le bouton ci-dessus.")
+    st.info("💡 Astuce : Utilisez le bouton ci-dessus pour chercher une capture dans votre galerie.")
 
 st.divider()
 
@@ -70,7 +76,6 @@ def entrainer_super_modele():
     X = df[feats]
     y = df['Cible']
     
-    # Fusion avancée par Stacking : Random Forest + XGBoost supervisés par une Régression Logistique
     estimators = [
         ('rf', RandomForestClassifier(n_estimators=50, random_state=42)),
         ('xgb', XGBClassifier(eval_metric='logloss', random_state=42))
