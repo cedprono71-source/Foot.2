@@ -73,8 +73,7 @@ col1, col2 = st.columns(2)
 with col1:
     home_team = st.selectbox("🏠 Équipe à Domicile", equipes_disponibles)
 with col2:
-    # Empêcher de sélectionner la même équipe à l'extérieur
-     equipes_exterieur = [eq for eq in equipes_disponibles if eq != home_team]
+    equipes_exterieur = [eq for eq in equipes_disponibles if eq != home_team]
     away_team = st.selectbox("✈️ Équipe à l'Extérieur", equipes_exterieur)
 
 # Récupérer les dernières statistiques enregistrées pour ces deux équipes dans la base
