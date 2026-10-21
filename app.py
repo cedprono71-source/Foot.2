@@ -1,14 +1,34 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from PIL import Image
 from sklearn.ensemble import StackingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 
 st.set_page_config(page_title="Pronostics Foot IA - Automatique", page_icon="⚽", layout="wide")
 
-st.title("⚽ Super-IA : Analyse Automatique des Matchs")
-st.write("Le Super-Modèle analyse les derniers matchs de la saison, calcule les statistiques des équipes et prédit les résultats de manière totalement autonome.")
+st.title("⚽ Super-IA : Analyse & Capture de Matchs")
+st.write("Importez ou collez la capture d'écran de votre match, et l'IA s'occupe d'analyser automatiquement les tendances et de prédire les résultats !")
+
+# --- SECTION IMAGE (IMPORT / COLLAGE) ---
+st.header("📸 1. Image du match")
+
+uploaded_file = st.file_uploader("📂 Importer une capture d'écran (ou glisser-déposer)", type=["png", "jpg", "jpeg"])
+
+st.markdown("---")
+st.write("📋 **Zone de collage rapide :**")
+st.text_area("Vous pouvez également copier/coller une image (Ctrl+V) ou des notes de match ici pour garder votre historique sous les yeux :", placeholder="Espace de notes / image...", height=70)
+
+image = None
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Capture d'écran du match chargée avec succès !", use_container_width=True)
+    st.success("Image prise en compte pour l'analyse !")
+else:
+    st.info("💡 Astuce : Utilisez le bouton d'importation ci-dessus pour charger la feuille de match ou la grille de vos pronostics.")
+
+st.divider()
 
 # --- CHARGEMENT ET ENTRAÎNEMENT DU SUPER-MODÈLE ---
 @st.cache_resource
@@ -43,8 +63,8 @@ def entrainer_et_predire():
     )
     modele.fit(X, y)
     
-    # Prédiction automatique sur les derniers matchs de la base de données
-    derniers_matchs = df_clean.tail(15).copy() # Sélectionne les 15 derniers matchs
+    # Prédiction automatique sur les derniers matchs
+    derniers_matchs = df_clean.tail(15).copy()
     X_pred = derniers_matchs[feats]
     
     preds = modele.predict(X_pred)
@@ -56,13 +76,13 @@ def entrainer_et_predire():
     
     return derniers_matchs
 
-with st.spinner("🤖 L'IA analyse les matchs et calcule les pronostics en cours..."):
+with st.spinner("🤖 Le Super-Modèle analyse les matchs en cours..."):
     resultats_df = entrainer_et_predire()
 
-st.success("✅ Analyse automatique terminée avec succès !")
+st.success("✅ Analyse automatique prête !")
 
-# --- AFFICHAGE DES RÉSULTATS SOUS FORME DE LISTE ---
-st.header("📊 Derniers Matchs Analysés par l'IA")
+# --- AFFICHAGE DES RÉSULTATS ---
+st.header("📊 2. Résultats de l'analyse automatique des matchs")
 
 for index, row in resultats_df.iterrows():
     with st.container():
