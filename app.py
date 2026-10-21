@@ -2,19 +2,18 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from PIL import Image
-from sklearn.ensemble import VotingClassifier, RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import StackingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 
 st.set_page_config(page_title="Pronostics Foot IA", page_icon="⚽", layout="centered")
 
 st.title("⚽ Mon IA de Pronostics Football")
-st.write("Importez ou collez une capture d'écran du match pour analyser les statistiques.")
+st.write("Importez ou collez une capture d'écran du match et ajustez les paramètres pour lancer le super-modèle.")
 
 # --- SECTION IMAGE (IMPORT OU COLLAGE) ---
 st.header("📸 1. Image du match")
 
-# Option d'importation par fichier / galerie
 uploaded_file = st.file_uploader("📂 Importer depuis votre appareil (ou coller une capture d'écran)", type=["png", "jpg", "jpeg"])
 
 image = None
@@ -51,9 +50,9 @@ prob_h = 1 / cote_h
 prob_d = 1 / cote_d
 prob_a = 1 / cote_a
 
-# --- CHARGEMENT DU MODÈLE ---
+# --- CHARGEMENT DU SUPER-MODÈLE (STACKING) ---
 @st.cache_resource
-def entrainer_modele_demo():
+def entrainer_super_modele():
     url = "https://www.football-data.co.uk/mmz4281/2425/F1.csv"
     df = pd.read_csv(url).dropna(subset=['FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A'])
     df['Cible'] = df['FTR'].map({'H': 1, 'D': 0, 'A': 2})
@@ -71,21 +70,24 @@ def entrainer_modele_demo():
     X = df[feats]
     y = df['Cible']
     
-    modele = VotingClassifier(
-        estimators=[
-            ('rf', RandomForestClassifier(n_estimators=50, random_state=42)),
-            ('lr', LogisticRegression(max_iter=500, random_state=42)),
-            ('xgb', XGBClassifier(eval_metric='logloss', random_state=42))
-        ],
-        voting='soft'
+    # Fusion avancée par Stacking : Random Forest + XGBoost supervisés par une Régression Logistique
+    estimators = [
+        ('rf', RandomForestClassifier(n_estimators=50, random_state=42)),
+        ('xgb', XGBClassifier(eval_metric='logloss', random_state=42))
+    ]
+    
+    modele = StackingClassifier(
+        estimators=estimators,
+        final_estimator=LogisticRegression(max_iter=500)
     )
+    
     modele.fit(X, y)
     return modele
 
-modele_final = entrainer_modele_demo()
+modele_final = entrainer_super_modele()
 
 # --- BOUTON DE PRÉDICTION ---
-if st.button("Lancer l'analyse de l'IA 🤖", type="primary"):
+if st.button("Lancer l'analyse du Super-Modèle 🤖", type="primary"):
     nouveau_match = np.array([[home_form, home_concede, away_form, away_concede, prob_h, prob_d, prob_a]])
     prediction = modele_final.predict(nouveau_match)[0]
     probabilites = modele_final.predict_proba(nouveau_match)[0]
