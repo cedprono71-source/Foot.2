@@ -1,6 +1,7 @@
 streamlit
 pandas
 numpy
+pillow
 scikit-learn
 xgboost
-
+lightgbm
