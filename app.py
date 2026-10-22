@@ -33,19 +33,21 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("⚽ Super-IA : Analyseur de Match")
-st.write("Importez la capture d'écran de votre match pour lancer l'analyse prédictive.")
+st.write("Sélectionnez la capture d'écran de votre match dans votre galerie pour lancer l'analyse.")
 
-# --- 1. SECTION IMAGE ---
+# --- 1. SECTION IMAGE (ACCÈS GALERIE) ---
 st.header("📸 1. Capture d'écran du match")
-uploaded_file = st.file_uploader("📂 Choisir une image ou capture d'écran", type=["png", "jpg", "jpeg"])
+
+# En limitant strictement aux types d'images, le système mobile oriente vers la galerie/fichiers images
+uploaded_file = st.file_uploader("🖼️ Choisir une capture dans la Galerie", type=["png", "jpg", "jpeg"])
 
 image = None
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Capture d'écran chargée avec succès !", use_container_width=True)
+    st.image(image, caption="Capture d'écran de la galerie chargée avec succès !", use_container_width=True)
     st.success("Image prête pour l'analyse !")
 else:
-    st.info("💡 Astuce : Sélectionnez la capture d'écran de votre match depuis votre galerie.")
+    st.info("💡 Astuce : Appuyez sur le bouton, puis choisissez **Fichiers** pour retrouver instantanément votre capture d'écran dans votre dossier Images/Galerie.")
 
 st.divider()
 
@@ -88,7 +90,7 @@ st.header("📊 2. Résultats de l'Analyse")
 
 if st.button("Lancer l'analyse du match 🤖", type="primary"):
     if uploaded_file is None:
-        st.warning("Veuillez d'abord importer une capture d'écran !")
+        st.warning("Veuillez d'abord importer une capture d'écran de votre galerie !")
     else:
         with st.spinner("Analyse en cours..."):
             valeurs_moyennes = np.array([[1.5, 1.0, 1.2, 1.3, 0.45, 0.28, 0.27]])
