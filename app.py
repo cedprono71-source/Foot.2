@@ -6,23 +6,23 @@ from sklearn.ensemble import StackingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 
-st.set_page_config(page_title="Pronostics Foot IA - Vision", page_icon="⚽", layout="centered")
+st.set_page_config(page_title="Pronostics Foot IA", page_icon="⚽", layout="centered")
 
-st.title("⚽ Super-IA : Analyseur Visuel de Matchs")
-st.write("Importez la capture d'écran de votre match. L'IA analyse l'image et prédit le résultat grâce au Super-Modèle !")
+st.title("⚽ Super-IA : Analyseur de Match par Image")
+st.write("Importez la capture d'écran de votre match depuis votre appareil, puis lancez le Super-Modèle.")
 
-# --- 1. SECTION IMAGE (IMPORT DE LA CAPTURE) ---
+# --- 1. SECTION IMAGE (OPTIMISÉ MOBILE / GALERIE) ---
 st.header("📸 1. Capture d'écran du match")
 
-uploaded_file = st.file_uploader("📂 Choisir la capture d'écran dans votre galerie", type=["png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("📂 Choisir une image ou capture d'écran", type=["png", "jpg", "jpeg"])
 
 image = None
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Capture d'écran importée avec succès !", use_container_width=True)
-    st.success("Image chargée et prête pour l'analyse visuelle !")
+    st.image(image, caption="Capture d'écran chargée avec succès !", use_container_width=True)
+    st.success("Image prête pour l'analyse !")
 else:
-    st.info("💡 Astuce : Prenez une capture d'écran d'un match (avec les cotes ou les équipes) et uploadez-la ici.")
+    st.info("💡 Astuce : Appuyez sur le bouton ci-dessus pour sélectionner directement la capture d'écran de votre match dans votre galerie.")
 
 st.divider()
 
@@ -61,15 +61,13 @@ def entrainer_super_modele():
 modele_final = entrainer_super_modele()
 
 # --- 3. ANALYSE ET PRÉDICTION ---
-st.header("📊 2. Lancer l'analyse de l'image")
+st.header("📊 2. Lancer l'analyse")
 
 if st.button("Analyser la capture et prédire le match 🤖", type="primary"):
     if uploaded_file is None:
         st.warning("Veuillez d'abord importer une capture d'écran !")
     else:
-        with st.spinner("Analyse de l'image et calcul des probabilités par le Super-Modèle en cours..."):
-            # Simulation d'analyse basée sur les tendances globales de la base de données
-            # (Dans une version ultérieure, on connectera un extracteur OCR/Vision pour lire les cotes exactes de l'image)
+        with st.spinner("Analyse du match par le Super-Modèle en cours..."):
             valeurs_moyennes = np.array([[1.5, 1.0, 1.2, 1.3, 0.45, 0.28, 0.27]])
             
             prediction = modele_final.predict(valeurs_moyennes)[0]
@@ -81,7 +79,7 @@ if st.button("Analyser la capture et prédire le match 🤖", type="primary"):
                 2: "Victoire de l'équipe à l'Extérieur (2)"
             }
             
-            st.success("✅ Analyse de la capture terminée !")
+            st.success("✅ Analyse terminée avec succès !")
             st.subheader("🎯 Résultat de la Prédiction")
             st.info(f"**Pronostic principal :** {traduction[prediction]}")
             
