@@ -34,8 +34,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("⚽ Super-IA : Analyseur 1N2 & BTTS")
-st.write("Sélectionnez la capture d'écran de votre match dans votre galerie pour lancer l'analyse multi-IA.")
+st.title("⚽ Super-IA : Analyseur Global 1N2 & BTTS")
+st.write("Sélectionnez la capture d'écran de votre match dans votre galerie pour lancer l'analyse multi-championnats.")
 
 # --- 1. SECTION IMAGE ---
 st.header("📸 1. Capture d'écran du match")
@@ -52,12 +52,29 @@ else:
 
 st.divider()
 
-# --- 2. CHARGEMENT DES DONNÉES ET DU SUPER-MODÈLE (6 IA au total) ---
+# --- 2. CHARGEMENT ET FUSION AUTOMATIQUE DE TOUS LES CHAMPIONNATS + SUPER-MODÈLE (6 IA) ---
 
 @st.cache_data
-def charger_donnees():
-    url = "https://www.football-data.co.uk/mmz4281/2425/F1.csv"
-    df = pd.read_csv(url).dropna(subset=['FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A'])
+def charger_tous_les_championnats():
+    # Liste des codes des grands championnats européens sur football-data.co.uk (Saison 24/25)
+    fichiers = ['F1.csv', 'E0.csv', 'SP1.csv', 'I1.csv', 'D1.csv', 'N1.csv']
+    base_url = "https://www.football-data.co.uk/mmz4281/2425/"
+    
+    dfs = []
+    for f in fichiers:
+        try:
+            url = base_url + f
+            temp_df = pd.read_csv(url).dropna(subset=['FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A'])
+            dfs.append(temp_df)
+        except Exception:
+            continue
+            
+    if not dfs:
+        # Fallback de sécurité si un lien échoue
+        df = pd.read_csv(base_url + 'F1.csv').dropna(subset=['FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A'])
+    else:
+        df = pd.concat(dfs, ignore_index=True)
+        
     df['Cible'] = df['FTR'].map({'H': 1, 'D': 0, 'A': 2})
     df['Home_Form_H'] = df.groupby('HomeTeam')['FTHG'].transform(lambda x: x.rolling(5, min_periods=1).mean())
     df['Home_Concede_H'] = df.groupby('HomeTeam')['FTAG'].transform(lambda x: x.rolling(5, min_periods=1).mean())
@@ -70,7 +87,7 @@ def charger_donnees():
 
 @st.cache_resource
 def entrainer_super_modele():
-    df = charger_donnees()
+    df = charger_tous_les_championnats()
     feats = ['Home_Form_H', 'Home_Concede_H', 'Away_Form_A', 'Away_Concede_A', 'Prob_H', 'Prob_D', 'Prob_A']
     df_clean = df.dropna(subset=feats + ['Cible'])
     
@@ -93,20 +110,20 @@ def entrainer_super_modele():
     modele.fit(X, y)
     return modele
 
-with st.spinner("Chargement et entraînement du Super-Modèle (6 IA)..."):
+with st.spinner("Téléchargement et fusion de tous les championnats + Entraînement du Super-Modèle (6 IA)..."):
     modele_final = entrainer_super_modele()
 
 # --- 3. ANALYSE ET AFFICHAGE CIBLÉ (1N2 & BTTS) ---
 st.header("📊 2. Résultats de l'Analyse")
 
-if st.button("Lancer l'analyse du match 🤖", type="primary"):
+if st.button("Lancer l'analyse globale 🤖", type="primary"):
     if uploaded_file is None:
         st.warning("Veuillez d'abord importer une capture d'écran de votre galerie !")
     else:
-        with st.spinner("Calcul des probabilités 1N2 et BTTS en cours..."):
+        with st.spinner("Calcul des probabilités 1N2 et BTTS par le Super-Modèle global..."):
             features_match = np.array([[1.6, 0.9, 1.3, 1.2, 0.50, 0.28, 0.22]])
             
-            # 1. Calcul 1N2 via le Stacking (6 IA)
+            # 1. Calcul 1N2 via le Stacking global (6 IA)
             probabilites = modele_final.predict_proba(features_match)[0]
             p_home = probabilites[0] * 100
             p_draw = probabilites[1] * 100
@@ -119,7 +136,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
             # Carte 1 : Probabilités 1N2
             st.markdown(f"""
                 <div class="card">
-                    <div class="card-title">📊 RÉSULTAT DU MATCH (1N2 - 6 Modèles IA)</div>
+                    <div class="card-title">📊 RÉSULTAT DU MATCH (1N2 - Super-Modèle Global)</div>
                     <p>Victoire Domicile : <b>{p_home:.1f}%</b></p>
                     <progress value="{p_home}" max="100" style="width:100%;"></progress>
                     <p style="margin-top:10px;">Match Nul : <b>{p_draw:.1f}%</b></p>
@@ -136,7 +153,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
                     <p>Les deux équipes marquent (BTTS) : <b>{score_btts:.1f}%</b></p>
                     <progress value="{score_btts}" max="100" style="width:100%;"></progress>
                     <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">
-                        Basé sur la dynamique offensive et défensive croisée des deux formations.
+                        Basé sur la dynamique offensive et défensive globale de toutes les ligues.
                     </p>
                 </div>
             """, unsafe_allow_html=True)
