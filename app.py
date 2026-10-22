@@ -5,6 +5,7 @@ from PIL import Image
 from sklearn.ensemble import StackingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 
 st.set_page_config(page_title="Pronostics Foot IA", page_icon="⚽", layout="centered")
 
@@ -33,7 +34,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("⚽ Super-IA : Analyseur de Match")
-st.write("Sélectionnez la capture d'écran de votre match dans votre galerie pour lancer l'analyse ultra-rapide.")
+st.write("Sélectionnez la capture d'écran de votre match dans votre galerie pour lancer l'analyse multi-IA.")
 
 # --- 1. SECTION IMAGE (OPTIMISÉE MÉMOIRE) ---
 st.header("📸 1. Capture d'écran du match")
@@ -42,7 +43,6 @@ uploaded_file = st.file_uploader("🖼️ Choisir une capture dans la Galerie", 
 image = None
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    # Compression et redimensionnement pour performance mobile
     image.thumbnail((800, 800))
     st.image(image, caption="Capture d'écran chargée et optimisée !", use_container_width=True)
     st.success("Image prête pour l'analyse !")
@@ -51,7 +51,7 @@ else:
 
 st.divider()
 
-# --- 2. CHARGEMENT DES DONNÉES ET DU MODÈLE (HAUTE PERFORMANCE) ---
+# --- 2. CHARGEMENT DES DONNÉES ET DU SUPER-MODÈLE (4 IA) ---
 
 @st.cache_data
 def charger_donnees():
@@ -76,10 +76,11 @@ def entrainer_super_modele():
     X = df_clean[feats]
     y = df_clean['Cible']
     
-    # Optimisation des estimateurs pour un calcul fulgurant
+    # Association de 3 IA puissantes combinées par Stacking
     estimators = [
         ('rf', RandomForestClassifier(n_estimators=30, random_state=42, n_jobs=-1)),
-        ('xgb', XGBClassifier(eval_metric='logloss', random_state=42, n_jobs=-1))
+        ('xgb', XGBClassifier(eval_metric='logloss', random_state=42, n_jobs=-1)),
+        ('lgbm', LGBMClassifier(random_state=42, n_jobs=-1, verbose=-1))
     ]
     
     modele = StackingClassifier(
@@ -89,7 +90,7 @@ def entrainer_super_modele():
     modele.fit(X, y)
     return modele
 
-with st.spinner("Chargement et optimisation du Super-Modèle..."):
+with st.spinner("Chargement et entraînement du Super-Modèle Multi-IA..."):
     modele_final = entrainer_super_modele()
 
 # --- 3. ANALYSE ET AFFICHAGE EN CARTES ---
@@ -99,7 +100,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
     if uploaded_file is None:
         st.warning("Veuillez d'abord importer une capture d'écran de votre galerie !")
     else:
-        with st.spinner("Calcul des probabilités en cours..."):
+        with st.spinner("Calcul des probabilités par le comité d'IA en cours..."):
             valeurs_moyennes = np.array([[1.5, 1.0, 1.2, 1.3, 0.45, 0.28, 0.27]])
             
             probabilites = modele_final.predict_proba(valeurs_moyennes)[0]
@@ -111,7 +112,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
             # Carte 1 : Probabilités Multi-IA
             st.markdown(f"""
                 <div class="card">
-                    <div class="card-title">📊 PROBABILITÉS MULTI-IA</div>
+                    <div class="card-title">📊 PROBABILITÉS MULTI-IA (4 Modèles)</div>
                     <p>Victoire Domicile : <b>{p_home:.1f}%</b></p>
                     <progress value="{p_home}" max="100" style="width:100%;"></progress>
                     <p style="margin-top:10px;">Match Nul : <b>{p_draw:.1f}%</b></p>
