@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 from sklearn.ensemble import StackingClassifier, RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 
@@ -51,7 +52,7 @@ else:
 
 st.divider()
 
-# --- 2. CHARGEMENT DES DONNÉES ET DU SUPER-MODÈLE (5 IA au total) ---
+# --- 2. CHARGEMENT DES DONNÉES ET DU SUPER-MODÈLE (6 IA au total) ---
 
 @st.cache_data
 def charger_donnees():
@@ -76,12 +77,13 @@ def entrainer_super_modele():
     X = df_clean[feats]
     y = df_clean['Cible']
     
-    # Comité de 4 estimateurs + 1 méta-modèle = 5 IA au total
+    # Comité de 5 estimateurs + 1 méta-modèle = 6 IA au total
     estimators = [
         ('rf', RandomForestClassifier(n_estimators=30, random_state=42, n_jobs=-1)),
         ('xgb', XGBClassifier(eval_metric='logloss', random_state=42, n_jobs=-1)),
         ('lgbm', LGBMClassifier(random_state=42, n_jobs=-1, verbose=-1)),
-        ('gb', GradientBoostingClassifier(random_state=42))
+        ('gb', GradientBoostingClassifier(random_state=42)),
+        ('knn', KNeighborsClassifier(n_neighbors=5))
     ]
     
     modele = StackingClassifier(
@@ -91,7 +93,7 @@ def entrainer_super_modele():
     modele.fit(X, y)
     return modele
 
-with st.spinner("Chargement et entraînement du Super-Modèle (5 IA)..."):
+with st.spinner("Chargement et entraînement du Super-Modèle (6 IA)..."):
     modele_final = entrainer_super_modele()
 
 # --- 3. ANALYSE ET AFFICHAGE CIBLÉ (1N2 & BTTS) ---
@@ -104,7 +106,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
         with st.spinner("Calcul des probabilités 1N2 et BTTS en cours..."):
             features_match = np.array([[1.6, 0.9, 1.3, 1.2, 0.50, 0.28, 0.22]])
             
-            # 1. Calcul 1N2 via le Stacking (5 IA)
+            # 1. Calcul 1N2 via le Stacking (6 IA)
             probabilites = modele_final.predict_proba(features_match)[0]
             p_home = probabilites[0] * 100
             p_draw = probabilites[1] * 100
@@ -117,7 +119,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
             # Carte 1 : Probabilités 1N2
             st.markdown(f"""
                 <div class="card">
-                    <div class="card-title">📊 RÉSULTAT DU MATCH (1N2 - 5 Modèles IA)</div>
+                    <div class="card-title">📊 RÉSULTAT DU MATCH (1N2 - 6 Modèles IA)</div>
                     <p>Victoire Domicile : <b>{p_home:.1f}%</b></p>
                     <progress value="{p_home}" max="100" style="width:100%;"></progress>
                     <p style="margin-top:10px;">Match Nul : <b>{p_draw:.1f}%</b></p>
