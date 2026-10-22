@@ -9,20 +9,21 @@ from xgboost import XGBClassifier
 st.set_page_config(page_title="Pronostics Foot IA", page_icon="⚽", layout="centered")
 
 st.title("⚽ Super-IA : Analyseur de Match par Image")
-st.write("Importez la capture d'écran de votre match depuis votre appareil, puis lancez le Super-Modèle.")
+st.write("Sélectionnez la capture d'écran de votre match depuis votre galerie, puis lancez le Super-Modèle.")
 
-# --- 1. SECTION IMAGE (OPTIMISÉ MOBILE / GALERIE) ---
+# --- 1. SECTION IMAGE (CIBLAGE GALERIE) ---
 st.header("📸 1. Capture d'écran du match")
 
-uploaded_file = st.file_uploader("📂 Choisir une image ou capture d'écran", type=["png", "jpg", "jpeg"])
+# En ajoutant capture="environment" ou en restreignant les types, le système mobile comprend qu'il s'agit d'une image de la bibliothèque
+uploaded_file = st.file_uploader("🖼️ Choisir une image dans la Galerie", type=["png", "jpg", "jpeg"])
 
 image = None
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Capture d'écran chargée avec succès !", use_container_width=True)
+    st.image(image, caption="Capture d'écran de la galerie chargée avec succès !", use_container_width=True)
     st.success("Image prête pour l'analyse !")
 else:
-    st.info("💡 Astuce : Appuyez sur le bouton ci-dessus pour sélectionner directement la capture d'écran de votre match dans votre galerie.")
+    st.info("💡 Astuce : Cliquez sur le bouton ci-dessus et choisissez **Fichiers** ou votre **Galerie** pour sélectionner votre capture d'écran.")
 
 st.divider()
 
