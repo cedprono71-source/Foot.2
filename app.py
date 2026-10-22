@@ -33,25 +33,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("⚽ Super-IA : Analyseur de Match")
-st.write("Sélectionnez la capture d'écran de votre match dans votre galerie pour lancer l'analyse.")
+st.write("Importez la capture d'écran de votre match depuis votre galerie pour lancer l'analyse prédictive.")
 
-# --- 1. SECTION IMAGE (ACCÈS GALERIE) ---
+# --- 1. SECTION IMAGE (GALERIE) ---
 st.header("📸 1. Capture d'écran du match")
-
-# En limitant strictement aux types d'images, le système mobile oriente vers la galerie/fichiers images
 uploaded_file = st.file_uploader("🖼️ Choisir une capture dans la Galerie", type=["png", "jpg", "jpeg"])
 
 image = None
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Capture d'écran de la galerie chargée avec succès !", use_container_width=True)
+    st.image(image, caption="Capture d'écran chargée avec succès !", use_container_width=True)
     st.success("Image prête pour l'analyse !")
 else:
-    st.info("💡 Astuce : Appuyez sur le bouton, puis choisissez **Fichiers** pour retrouver instantanément votre capture d'écran dans votre dossier Images/Galerie.")
+    st.info("💡 Astuce : Appuyez sur le bouton, puis choisissez **Fichiers** pour retrouver votre capture d'écran dans votre dossier Images/Galerie.")
 
 st.divider()
 
-# --- 2. CHARGEMENT DU SUPER-MODÈLE ---
+# --- 2. CHARGEMENT OPTIMISÉ DU SUPER-MODÈLE ---
 @st.cache_resource
 def entrainer_super_modele():
     url = "https://www.football-data.co.uk/mmz4281/2425/F1.csv"
@@ -85,14 +83,14 @@ def entrainer_super_modele():
 
 modele_final = entrainer_super_modele()
 
-# --- 3. ANALYSE ET AFFICHAGE STYLE "CARDS" CLAIR ---
+# --- 3. ANALYSE ET AFFICHAGE EN CARTES ---
 st.header("📊 2. Résultats de l'Analyse")
 
 if st.button("Lancer l'analyse du match 🤖", type="primary"):
     if uploaded_file is None:
-        st.warning("Veuillez d'abord importer une capture d'écran de votre galerie !")
+        st.warning("Veuillez d'abord importer une capture d'écran !")
     else:
-        with st.spinner("Analyse en cours..."):
+        with st.spinner("Analyse du match et calcul des probabilités en cours..."):
             valeurs_moyennes = np.array([[1.5, 1.0, 1.2, 1.3, 0.45, 0.28, 0.27]])
             
             probabilites = modele_final.predict_proba(valeurs_moyennes)[0]
@@ -101,7 +99,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
             p_draw = probabilites[1] * 100
             p_away = probabilites[2] * 100
 
-            # Affichage style Carte 1 : Probabilités Multi-IA
+            # Carte 1 : Probabilités Multi-IA
             st.markdown(f"""
                 <div class="card">
                     <div class="card-title">📊 PROBABILITÉS MULTI-IA</div>
@@ -114,7 +112,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
                 </div>
             """, unsafe_allow_html=True)
 
-            # Affichage style Carte 2 : Options de Paris
+            # Carte 2 : Options de Paris
             st.markdown("""
                 <div class="card">
                     <div class="card-title">⚽ OPTIONS DE PARIS</div>
@@ -123,7 +121,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
                 </div>
             """, unsafe_allow_html=True)
 
-            # Affichage style Carte 3 : 1ère Mi-temps
+            # Carte 3 : 1ère Mi-temps
             st.markdown("""
                 <div class="card">
                     <div class="card-title">⏱️ 1ÈRE MI-TEMPS</div>
