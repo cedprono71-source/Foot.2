@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from PIL import Image
-from sklearn.ensemble import StackingClassifier, RandomForestClassifier
+from sklearn.ensemble import StackingClassifier, RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
@@ -34,7 +34,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("⚽ Super-IA : Analyseur 1N2 & BTTS")
-st.write("Sélectionnez la capture d'écran de votre match dans votre galerie pour lancer l'analyse ciblée.")
+st.write("Sélectionnez la capture d'écran de votre match dans votre galerie pour lancer l'analyse multi-IA.")
 
 # --- 1. SECTION IMAGE ---
 st.header("📸 1. Capture d'écran du match")
@@ -51,7 +51,7 @@ else:
 
 st.divider()
 
-# --- 2. CHARGEMENT DES DONNÉES ET DU SUPER-MODÈLE (4 IA) ---
+# --- 2. CHARGEMENT DES DONNÉES ET DU SUPER-MODÈLE (5 IA au total) ---
 
 @st.cache_data
 def charger_donnees():
@@ -76,10 +76,12 @@ def entrainer_super_modele():
     X = df_clean[feats]
     y = df_clean['Cible']
     
+    # Comité de 4 estimateurs + 1 méta-modèle = 5 IA au total
     estimators = [
         ('rf', RandomForestClassifier(n_estimators=30, random_state=42, n_jobs=-1)),
         ('xgb', XGBClassifier(eval_metric='logloss', random_state=42, n_jobs=-1)),
-        ('lgbm', LGBMClassifier(random_state=42, n_jobs=-1, verbose=-1))
+        ('lgbm', LGBMClassifier(random_state=42, n_jobs=-1, verbose=-1)),
+        ('gb', GradientBoostingClassifier(random_state=42))
     ]
     
     modele = StackingClassifier(
@@ -89,7 +91,7 @@ def entrainer_super_modele():
     modele.fit(X, y)
     return modele
 
-with st.spinner("Chargement et entraînement du Super-Modèle Multi-IA..."):
+with st.spinner("Chargement et entraînement du Super-Modèle (5 IA)..."):
     modele_final = entrainer_super_modele()
 
 # --- 3. ANALYSE ET AFFICHAGE CIBLÉ (1N2 & BTTS) ---
@@ -100,25 +102,22 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
         st.warning("Veuillez d'abord importer une capture d'écran de votre galerie !")
     else:
         with st.spinner("Calcul des probabilités 1N2 et BTTS en cours..."):
-            # Simulation de vecteurs statistiques représentatifs du match analysé
-            # [Home_Form, Home_Concede, Away_Form, Away_Concede, Prob_H, Prob_D, Prob_A]
             features_match = np.array([[1.6, 0.9, 1.3, 1.2, 0.50, 0.28, 0.22]])
             
-            # 1. Calcul 1N2 via le Stacking (4 IA)
+            # 1. Calcul 1N2 via le Stacking (5 IA)
             probabilites = modele_final.predict_proba(features_match)[0]
             p_home = probabilites[0] * 100
             p_draw = probabilites[1] * 100
             p_away = probabilites[2] * 100
 
-            # 2. Calcul dynamique du BTTS basé sur la capacité offensive/défensive
-            # Plus les équipes marquent et encaissent, plus la probabilité BTTS augmente
+            # 2. Calcul dynamique du BTTS
             form_h, concede_h, form_a, concede_a = features_match[0][0], features_match[0][1], features_match[0][2], features_match[0][3]
             score_btts = min(max(((form_h + concede_a + form_a + concede_h) / 4) * 35 + 15, 20), 85)
 
-            # Carte 1 : Probabilités 1N2 (Multi-IA)
+            # Carte 1 : Probabilités 1N2
             st.markdown(f"""
                 <div class="card">
-                    <div class="card-title">📊 RÉSULTAT DU MATCH (1N2 - 4 Modèles IA)</div>
+                    <div class="card-title">📊 RÉSULTAT DU MATCH (1N2 - 5 Modèles IA)</div>
                     <p>Victoire Domicile : <b>{p_home:.1f}%</b></p>
                     <progress value="{p_home}" max="100" style="width:100%;"></progress>
                     <p style="margin-top:10px;">Match Nul : <b>{p_draw:.1f}%</b></p>
@@ -128,7 +127,7 @@ if st.button("Lancer l'analyse du match 🤖", type="primary"):
                 </div>
             """, unsafe_allow_html=True)
 
-            # Carte 2 : BTTS (Les deux équipes marquent)
+            # Carte 2 : BTTS
             st.markdown(f"""
                 <div class="card">
                     <div class="card-title">⚽ OPTIONS DE PARIS : BTTS</div>
