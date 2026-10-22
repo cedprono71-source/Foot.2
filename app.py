@@ -38,7 +38,7 @@ st.markdown("""
 st.title("⚽ Super-IA : Analyseur Dynamique OCR")
 st.write("Importez une capture d'écran de match : l'IA va lire les équipes et lancer l'analyse globale.")
 
-# --- 1. CHARGEMENT DE L'OCR (Mis en cache pour la vitesse) ---
+# --- 1. CHARGEMENT DE L'OCR ---
 @st.cache_resource
 def charger_lecteur_ocr():
     return easyocr.Reader(['en', 'fr'], gpu=False)
@@ -62,7 +62,7 @@ if uploaded_file is not None:
     resultats_ocr = lecteur_ocr.readtext(image_np)
     detected_text = [res[1] for res in resultats_ocr]
     
-    st.success( Texte détecté : " + ", ".join(detected_text[:5]) + " ...")
+    st.success("Texte détecté : " + ", ".join(detected_text[:5]) + " ...")
 else:
     st.info("💡 Astuce : Importez une capture d'écran claire affichant les noms des deux équipes.")
 
@@ -134,7 +134,6 @@ if st.button("Lancer l'analyse dynamique 🤖", type="primary"):
         st.warning("Veuillez d'abord importer une capture d'écran !")
     else:
         with st.spinner("Recherche des équipes et calcul des probabilités sur-mesure..."):
-            # Recherche intelligente d'une équipe détectée dans notre base globale
             features_match = None
             equipe_trouvee = False
             
@@ -149,24 +148,20 @@ if st.button("Lancer l'analyse dynamique 🤖", type="primary"):
                     equipe_trouvee = True
                     break
             
-            # Si aucune équipe n'est reconnue par l'OCR, on prend une ligne aléatoire dynamique de la base
             if not equipe_trouvee or features_match is None:
                 row_rand = df_global.sample(n=1).iloc[0]
                 features_match = np.array([[row_rand['Home_Form_H'], row_rand['Home_Concede_H'], 
                                            row_rand['Away_Form_A'], row_rand['Away_Concede_A'], 
                                            row_rand['Prob_H'], row_rand['Prob_D'], row_rand['Prob_A']]])
             
-            # 1. Calcul 1N2 via le Stacking global (6 IA)
             probabilites = modele_final.predict_proba(features_match)[0]
             p_home = probabilites[0] * 100
             p_draw = probabilites[1] * 100
             p_away = probabilites[2] * 100
 
-            # 2. Calcul dynamique du BTTS
             form_h, concede_h, form_a, concede_a = features_match[0][0], features_match[0][1], features_match[0][2], features_match[0][3]
             score_btts = min(max(((form_h + concede_a + form_a + concede_h) / 4) * 35 + 15, 20), 85)
 
-            # Carte 1 : Probabilités 1N2
             st.markdown(f"""
                 <div class="card">
                     <div class="card-title">📊 RÉSULTAT DU MATCH (1N2 - Super-Modèle Global)</div>
@@ -179,7 +174,6 @@ if st.button("Lancer l'analyse dynamique 🤖", type="primary"):
                 </div>
             """, unsafe_allow_html=True)
 
-            # Carte 2 : BTTS
             st.markdown(f"""
                 <div class="card">
                     <div class="card-title">⚽ OPTIONS DE PARIS : BTTS</div>
