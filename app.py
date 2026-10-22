@@ -8,24 +8,25 @@ from xgboost import XGBClassifier
 
 st.set_page_config(page_title="Pronostics Foot IA", page_icon="⚽", layout="centered")
 
-# --- DESIGN PERSONNALISÉ (STYLE CARDS SOMBRE) ---
+# --- DESIGN PERSONNALISÉ (STYLE CLAIR & LUMINEUX) ---
 st.markdown("""
     <style>
     .stApp {
-        background-color: #0e1117;
-        color: #fafafa;
+        background-color: #f8f9fa;
+        color: #212529;
     }
     .card {
-        background-color: #1a1c23;
+        background-color: #ffffff;
         padding: 20px;
         border-radius: 12px;
-        border: 1px solid #2d3139;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         margin-bottom: 20px;
     }
     .card-title {
         font-size: 16px;
         font-weight: bold;
-        color: #ffffff;
+        color: #1f2937;
         margin-bottom: 10px;
     }
     </style>
@@ -82,7 +83,7 @@ def entrainer_super_modele():
 
 modele_final = entrainer_super_modele()
 
-# --- 3. ANALYSE ET AFFICHAGE STYLE "CARDS" ---
+# --- 3. ANALYSE ET AFFICHAGE STYLE "CARDS" CLAIR ---
 st.header("📊 2. Résultats de l'Analyse")
 
 if st.button("Lancer l'analyse du match 🤖", type="primary"):
